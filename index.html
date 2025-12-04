@@ -1572,41 +1572,69 @@ async function apiRequest(action, payload) {
     updateRoleUI();
   }
 
-  function saveCurrentMonthFromTable(){
-    if (!currentMonthKey) return;
-    const monthObj=ensureMonthObj(currentMonthKey);
-    const dataRows=[];
-    Array.from(tableBody.rows).forEach(tr=>{
-      const rowType = tr.dataset.rowType || "normal";
-      const owner = tr.dataset.owner || "";
-      const date = tr.querySelector(".date")?.value || "";
-      const time = tr.querySelector(".time")?.value || "";
-      const device = tr.querySelector(".device")?.value || "";
-      const supplier = tr.querySelector(".supplier-select")?.value || "";
-      const anfang = tr.querySelector(".anfang") ? parseNum(tr.querySelector(".anfang").value) : null;
-      const diesel = parseNum(tr.querySelector(".diesel")?.value);
-      const ende = tr.querySelector(".ende") ? parseNum(tr.querySelector(".ende").value) : null;
-      const betrTotal = tr.querySelector(".betr-total") ? parseNum(tr.querySelector(".betr-total").value) : null;
-      const tankStock = parseNum(tr.querySelector(".tankstock")?.value);
-      const by = tr.querySelector(".getankt-by")?.value || "";
-      const comment = tr.querySelector(".comment")?.value || "";
-      dataRows.push({
-        type: rowType,
-        owner,
-        date,time,device,
-        supplier,
-        anfang:anfang!=null?Math.round(anfang):null,
-        diesel:diesel!=null?Math.round(diesel):null,
-        ende:ende!=null?Math.round(ende):null,
-        betrTotal:betrTotal!=null?Math.round(betrTotal):null,
-        tankStock:tankStock!=null?Math.round(tankStock):null,
-        by,comment
-      });
+function saveCurrentMonthFromTable(){
+  if (!currentMonthKey) return;
+  const monthObj = ensureMonthObj(currentMonthKey);
+  const dataRows = [];
+
+  Array.from(tableBody.rows).forEach(tr => {
+    const rowType  = tr.dataset.rowType || "normal";
+    const owner    = tr.dataset.owner || "";
+    const date     = tr.querySelector(".date")?.value || "";
+    const time     = tr.querySelector(".time")?.value || "";
+    const device   = tr.querySelector(".device")?.value || "";
+    const supplier = tr.querySelector(".supplier-select")?.value || "";
+
+    const anfangEl    = tr.querySelector(".anfang");
+    const dieselEl    = tr.querySelector(".diesel");
+    const endeEl      = tr.querySelector(".ende");
+    const betrTotalEl = tr.querySelector(".betr-total");
+    const tankStockEl = tr.querySelector(".tankstock");
+
+    const anfang    = anfangEl    ? parseNum(anfangEl.value)    : null;
+    const diesel    = dieselEl    ? parseNum(dieselEl.value)    : null;
+    const ende      = endeEl      ? parseNum(endeEl.value)      : null;
+    const betrTotal = betrTotalEl ? parseNum(betrTotalEl.value) : null;
+    const tankStock = tankStockEl ? parseNum(tankStockEl.value) : null;
+
+    const by      = tr.querySelector(".getankt-by")?.value || "";
+    const comment = tr.querySelector(".comment")?.value || "";
+
+    // --- проверка: полностью пустая строка? ---
+    const isEmpty =
+      !date && !time && !device && !supplier &&
+      (anfang == null || anfang === 0) &&
+      (diesel == null || diesel === 0) &&
+      (ende == null || ende === 0) &&
+      (betrTotal == null || betrTotal === 0) &&
+      (tankStock == null || tankStock === 0) &&
+      !by && !comment;
+
+    if (isEmpty) {
+      // эту строку НЕ сохраняем в Google Sheets
+      return;
+    }
+
+    dataRows.push({
+      type: rowType,
+      owner,
+      date, time, device,
+      supplier,
+      anfang:    anfang    != null ? Math.round(anfang)    : null,
+      diesel:    diesel    != null ? Math.round(diesel)    : null,
+      ende:      ende      != null ? Math.round(ende)      : null,
+      betrTotal: betrTotal != null ? Math.round(betrTotal) : null,
+      tankStock: tankStock != null ? Math.round(tankStock) : null,
+      by,
+      comment
     });
-    monthObj.rows=dataRows;
-    // Speichern ins Google-Sheets-Backend
-    saveDieselDataForMonth(currentMonthKey);
-  }
+  });
+
+  monthObj.rows = dataRows;
+  // Сохраняем месяц в Google Sheets
+  saveDieselDataForMonth(currentMonthKey);
+}
+
 
   async function loadMonthIntoTable(key){
     currentMonthKey=key;
