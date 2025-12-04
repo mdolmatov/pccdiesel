@@ -890,17 +890,18 @@
   // Replace this URL with your deployed Google Apps Script Web App URL (Ends with /exec)
   const API_URL = 'https://script.google.com/macros/s/AKfycby_Y9HkO5QKVImCezfhdIbxqYQsrvZ88SoAdWTrnkjqf5sNduvBzs9qq4GI374rEXmP/exec';
 
-  async function apiRequest(action, payload) {
-    const res = await fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action, ...payload })
-    });
-    if (!res.ok) {
-      throw new Error('HTTP ' + res.status + ' beim Google-Backend');
-    }
-    return res.json();
+async function apiRequest(action, payload) {
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    // ВАЖНО: text/plain, чтобы не было preflight (OPTIONS)
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ action, ...payload })
+  });
+  if (!res.ok) {
+    throw new Error('HTTP ' + res.status + ' beim Google-Backend');
   }
+  return res.json();
+}
 
   /******** USERS (LOCAL) ********/
   let users = [];
