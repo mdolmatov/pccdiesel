@@ -1,0 +1,2580 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PCC Intermodal – Dieselverbrauch (Lokal, Mobil)</title>
+  <style>
+    :root {
+      --pcc-orange: #f58220;
+      --pcc-dark-orange: #d46d17;
+      --pcc-light: #ffffff;
+      --pcc-bg: #f4f4f4;
+      --pcc-border: #e0e0e0;
+      --pcc-text-dark: #333333;
+      --pcc-text-muted: #777777;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      background: var(--pcc-bg);
+      color: var(--pcc-text-dark);
+      min-height: 100vh;
+      overflow-x: hidden;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      background: linear-gradient(90deg,var(--pcc-orange),#ffad4d);
+      color: var(--pcc-light);
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    }
+    header .title {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: .03em;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    header .title .logo-box {
+      width: 22px; height: 22px;
+      border-radius: 4px;
+      border: 2px solid var(--pcc-light);
+    }
+    header .user-info {
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    header .role-badge {
+      background: rgba(255,255,255,.15);
+      border-radius: 999px;
+      padding: 3px 10px;
+      font-size: 12px;
+    }
+    header .logout-btn {
+      border: none;
+      border-radius: 999px;
+      padding: 6px 12px;
+      background: var(--pcc-light);
+      color: var(--pcc-orange);
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    header .logout-btn:hover { background: #ffe7cf; }
+
+    .page {
+      width: 100%;
+      max-width: 1400px;
+      margin: 16px auto 16px;
+      padding: 0 16px;
+      flex: 1 0 auto;
+    }
+
+    #loginView {
+      max-width: 380px;
+      margin: 60px auto;
+      width: 100%;
+    }
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+      padding: 20px 22px;
+      border: 1px solid var(--pcc-border);
+    }
+    .card h2 {
+      margin: 0 0 10px;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .card h2::before {
+      content: "";
+      width: 4px;
+      height: 18px;
+      border-radius: 999px;
+      background: var(--pcc-orange);
+    }
+    .card p { margin: 0 0 10px; font-size: 13px; color: var(--pcc-text-muted); }
+    .form-group { margin-bottom: 10px; }
+    .form-group label {
+      display: block;
+      font-size: 13px;
+      margin-bottom: 4px;
+    }
+    .form-group input, .form-group select {
+      width: 100%;
+      padding: 7px 9px;
+      border-radius: 8px;
+      border: 1px solid #d0d0d0;
+      font-size: 14px;
+    }
+    .btn-primary {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 999px;
+      border: none;
+      background: var(--pcc-orange);
+      color: #fff;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 15px;
+      margin-top: 6px;
+    }
+    .btn-primary:hover { background: var(--pcc-dark-orange); }
+    .hint {
+      font-size: 12px;
+      color: var(--pcc-text-muted);
+      margin-top: 8px;
+    }
+
+    #appView { display: none; }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+    .toolbar button {
+      padding: 7px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--pcc-border);
+      background: #fff;
+      font-size: 13px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .toolbar button.primary {
+      background: var(--pcc-orange);
+      color: #fff;
+      border-color: transparent;
+    }
+    .toolbar input[type="month"] {
+      padding: 6px 8px;
+      border-radius: 999px;
+      border: 1px solid #d0d0d0;
+      font-size: 13px;
+      background: #fff;
+    }
+    .month-label {
+      font-size: 13px;
+      color: var(--pcc-text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: #fff;
+      border: 1px solid var(--pcc-border);
+    }
+    .pill-label {
+      font-size: 12px;
+      color: var(--pcc-text-muted);
+      padding: 3px 8px;
+      border-radius: 999px;
+      border: 1px dashed #d8d8d8;
+      background: #fff;
+    }
+
+    .table-card {
+      background: #fff;
+      border-radius: 12px;
+      border: 1px solid var(--pcc-border);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+      margin-bottom: 14px;
+      width: 100%;
+      max-height: 430px;
+      overflow-y: auto;
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      table-layout: fixed;
+      min-width: 900px;
+    }
+    thead { background: #fff7f0; }
+    th, td {
+      padding: 4px 6px;
+      border-bottom: 1px solid #eee;
+      text-align: left;
+      vertical-align: middle;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    th {
+      font-weight: 600;
+      border-bottom: 2px solid #ffd8aa;
+      background: linear-gradient(180deg,#fffaf4,#ffe9cf);
+      position: sticky;
+      top: 0;
+      z-index: 2;
+    }
+
+    tbody tr { background:#fff; }
+    tbody tr:hover { background: #fff4e6; }
+    tr.delivery-row {
+      background: #fff0e0 !important;
+    }
+
+    input.table-input, select.table-select {
+      width: 100%;
+      border-radius: 6px;
+      border: 1px solid #d4d4d4;
+      padding: 4px 5px;
+      font-size: 12px;
+      background: #fff;
+    }
+    input.table-input.readonly {
+      background: #f3f3f3;
+      color: #999;
+      cursor: not-allowed;
+    }
+
+    .date-input  { min-width: 120px; }
+    .time-input  { min-width: 90px; }
+    .number-input { max-width: 85px; }
+    .device-select   { min-width: 100px; }
+    .supplier-select { min-width: 90px; }
+
+    .col-actions { width: 60px; text-align: center; }
+    .col-actions-cell { text-align: center; }
+
+    #deviceControls, #supplierControls {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+      font-size: 13px;
+    }
+    #deviceControls input, #supplierControls input {
+      padding: 5px 7px;
+      border-radius: 999px;
+      border: 1px solid #d0d0d0;
+      font-size: 13px;
+    }
+    #deviceControls button, #supplierControls button {
+      padding: 5px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--pcc-orange);
+      background: #fff;
+      color: var(--pcc-orange);
+      cursor: pointer;
+      font-size: 12px;
+    }
+    #deviceControls button:disabled,
+    #supplierControls button:disabled { opacity: .4; cursor: default; }
+    #deviceControls select,
+    #supplierControls select {
+      padding: 4px 6px;
+      border-radius: 999px;
+      border: 1px solid #d0d0d0;
+      font-size: 13px;
+      background: #fff;
+    }
+
+    #userManagement { display: none; margin-top: 8px; }
+    #userManagement h3 { font-size: 15px; margin: 0 0 8px; }
+    #userManagement .user-form {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 10px;
+      align-items: center;
+    }
+    #userManagement .user-form input,
+    #userManagement .user-form select {
+      padding: 5px 7px;
+      border-radius: 8px;
+      border: 1px solid #d0d0d0;
+      font-size: 13px;
+    }
+    #userManagement .user-form button {
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: none;
+      background: var(--pcc-orange);
+      color: #fff;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+    }
+    #userList { font-size: 12px; color: var(--pcc-text-muted); }
+
+    .badge-role {
+      display: inline-block;
+      padding: 1px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      background: #fff7f0;
+      border: 1px solid #ffd8aa;
+      color: var(--pcc-dark-orange);
+      margin-left: 4px;
+    }
+
+    .delete-btn {
+      border-radius: 999px;
+      border: none;
+      padding: 1px 6px;
+      cursor: pointer;
+      font-size: 13px;
+      background: #ffe1d6;
+      color: #b32600;
+    }
+    .delete-btn:hover { background: #ffcab8; }
+
+    .delete-user-btn {
+      margin-left: 6px;
+      padding: 2px 6px;
+      border-radius: 999px;
+      border: none;
+      background: #ffe1d6;
+      color: #b32600;
+      font-size: 11px;
+      cursor: pointer;
+    }
+
+    .helper-strip {
+      margin-bottom: 10px;
+      font-size: 13px;
+      color: var(--pcc-text-muted);
+      background: #fff;
+      border-radius: 12px;
+      border: 1px dashed #ffd8aa;
+      padding: 8px 10px;
+    }
+    .helper-strip strong {
+      color: var(--pcc-dark-orange);
+    }
+
+    /* Аккуратный футер-подпись */
+    .signature {
+      flex-shrink: 0;
+      width: 100%;
+      border-top: 1px solid var(--pcc-border);
+      background: #fafafa;
+      padding: 8px 16px;
+      font-size: 11px;
+      color: var(--pcc-text-muted);
+      text-align: center;
+    }
+
+    /* Statistik-Overlay */
+    .stats-panel {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+    }
+    .stats-content {
+      background: #fff;
+      border-radius: 16px;
+      padding: 16px 18px;
+      max-width: 900px;
+      width: 95%;
+      max-height: 90vh;
+      overflow-y: auto;
+      border: 1px solid var(--pcc-border);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+      font-size: 13px;
+    }
+    .stats-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .stats-header h3 {
+      margin: 0;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .stats-header h3::before {
+      content: "";
+      width: 4px;
+      height: 18px;
+      border-radius: 999px;
+      background: var(--pcc-orange);
+    }
+    .stats-close-btn {
+      border-radius: 999px;
+      border: none;
+      padding: 4px 10px;
+      font-size: 12px;
+      background: #eee;
+      cursor: pointer;
+    }
+    .stats-close-btn:hover { background: #ddd; }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0,1fr));
+      gap: 16px;
+      margin-top: 8px;
+    }
+    .stats-block h4 {
+      margin: 0 0 4px;
+      font-size: 14px;
+    }
+    .stats-legend {
+      margin-top: 6px;
+      font-size: 11px;
+      color: var(--pcc-text-muted);
+    }
+    .stats-legend div {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin-bottom: 2px;
+    }
+    .legend-color {
+      width: 10px;
+      height: 10px;
+      border-radius: 2px;
+    }
+    .stats-summary {
+      margin-top: 6px;
+      font-size: 12px;
+      color: var(--pcc-text-muted);
+    }
+
+    /* FAB button for mobile quick "Neue Zeile" */
+    .fab-add-row {
+      position: fixed;
+      right: 16px;
+      bottom: 16px;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      border: none;
+      background: var(--pcc-orange);
+      color: #fff;
+      font-size: 28px;
+      font-weight: 700;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+      cursor: pointer;
+      z-index: 20;
+    }
+
+    @media (max-width: 900px) {
+      header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+      }
+      .page {
+        padding: 0 8px;
+        margin: 8px auto 8px;
+      }
+      .toolbar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .toolbar button,
+      .toolbar input[type="month"] {
+        width: 100%;
+        justify-content: center;
+      }
+      .pill-label {
+        width: 100%;
+        text-align: center;
+        white-space: normal;
+      }
+      .table-card {
+        max-height: none;
+        height: auto;
+      }
+      th, td {
+        padding: 3px 4px;
+        font-size: 11px;
+        text-overflow: initial;
+      }
+      /* hide advanced blocks auf Handy */
+      #deviceControls,
+      #supplierControls,
+      #userManagement {
+        display: none !important;
+      }
+      .fab-add-row {
+        display: flex;
+      }
+      .stats-grid {
+        grid-template-columns: minmax(0,1fr);
+      }
+    }
+
+    @media (max-width: 480px) {
+      header .title { font-size: 16px; }
+      header .user-info {
+        font-size: 12px;
+        flex-wrap: wrap;
+      }
+      .btn-primary {
+        font-size: 14px;
+      }
+    }
+  
+    /* Mobile Quiz UI (nur Handy) */
+    .mobile-quiz {
+      display: none;
+      margin-bottom: 10px;
+    }
+    .mobile-quiz .quiz-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .mobile-quiz .quiz-buttons button {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 999px;
+      border: none;
+      font-size: 14px;
+      cursor: pointer;
+      font-weight: 600;
+      background: var(--pcc-orange);
+      color: #fff;
+    }
+    .mobile-quiz .quiz-buttons button.secondary {
+      background: #fff;
+      color: var(--pcc-orange);
+      border: 1px solid var(--pcc-orange);
+    }
+    .quiz-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 60;
+    }
+    .quiz-dialog {
+      background: #fff;
+      border-radius: 16px;
+      padding: 16px 18px;
+      width: 95%;
+      max-width: 420px;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+      border: 1px solid var(--pcc-border);
+      font-size: 14px;
+    }
+    .quiz-header {
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .quiz-question {
+      margin-bottom: 10px;
+    }
+    .quiz-actions {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .quiz-actions button {
+      flex: 1;
+      padding: 8px 10px;
+      border-radius: 999px;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .quiz-actions .quiz-back {
+      background: #eee;
+    }
+    .quiz-actions .quiz-next {
+      background: var(--pcc-orange);
+      color: #fff;
+    }
+    .quiz-summary {
+      font-size: 13px;
+      border-radius: 8px;
+      background: #fafafa;
+      padding: 8px 10px;
+      border: 1px solid var(--pcc-border);
+    }
+    .quiz-summary div {
+      margin-bottom: 4px;
+    }
+
+    @media (max-width: 900px) {
+      .mobile-quiz {
+        display: block;
+      }
+      .toolbar,
+      .table-card {
+        display: none;
+      }
+      .fab-add-row {
+        display: none;
+      }
+    }
+
+
+    /* Fein-Tuning Mobile Quiz + Inputs */
+    .quiz-dialog input,
+    .quiz-dialog select,
+    .quiz-dialog textarea {
+      width: 100%;
+      box-sizing: border-box;
+      border-radius: 999px;
+      border: 1px solid var(--pcc-border);
+      padding: 10px 14px;
+      font-size: 15px;
+    }
+    .quiz-dialog textarea {
+      border-radius: 12px;
+      resize: vertical;
+      min-height: 80px;
+    }
+    .quiz-edit-datetime {
+      margin-top: 8px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--pcc-orange);
+      background: #fff;
+      color: var(--pcc-orange);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .quiz-edit-datetime:active {
+      transform: translateY(1px);
+    }
+    @media (max-width: 900px) {
+      body {
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+      }
+      .page {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+      }
+      #appView {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 16px 0 24px;
+      }
+      .mobile-quiz,
+      .helper-strip {
+        width: 100%;
+        max-width: 480px;
+      }
+      .helper-strip {
+        margin-top: 16px;
+      }
+    }
+
+  
+    @media (max-width: 900px) {
+      .mobile-quiz {
+        display: block;
+      }
+      .toolbar,
+      .table-card,
+      .fab-add-row {
+        display: none;
+      }
+    }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="title">
+    <div class="logo-box"></div>
+    PCC INTERMODAL – DIESELVERBRAUCH
+  </div>
+  <div class="user-info" id="headerUserInfo" style="display:none;">
+    <span>Angemeldet als <strong id="currentUserName"></strong></span>
+    <span class="role-badge" id="currentUserRole"></span>
+    <button class="logout-btn" id="logoutBtn">Abmelden</button>
+  </div>
+</header>
+
+<div class="page">
+
+  <div id="loginView">
+    <div class="card">
+      <h2>Anmeldung (lokal & mobil)</h2>
+      <p>Einfach einloggen, danach nur auf „Neue Zeile“ drücken und ausfüllen. Alles wird im Browser gespeichert.</p>
+      <div class="form-group">
+        <label for="loginUsername">Benutzername</label>
+        <input id="loginUsername" type="text" autocomplete="username" placeholder="z.B. mdolmatov">
+      </div>
+      <div class="form-group">
+        <label for="loginPassword">Passwort</label>
+        <input id="loginPassword" type="password" autocomplete="current-password" placeholder="Passwort">
+      </div>
+      <button class="btn-primary" id="loginBtn">Anmelden</button>
+      <div class="hint">
+        Standard-Logins (lokal vordefiniert):<br>
+        • Superuser: <code>mdolmatov / 1234</code><br>
+        • Nutzer: <code>adamb / 1234</code>
+      </div>
+    </div>
+  </div>
+
+  <div id="appView">
+  <div id="mobileQuiz" class="mobile-quiz">
+    <div class="card">
+      <h2>Schneller Eintrag (Mobil)</h2>
+      <p>Wähle, was du eintragen möchtest. Datum &amp; Uhrzeit kommen automatisch vom Gerät.</p>
+      <div class="quiz-buttons">
+        <button id="quizNormalBtn">Diesel tanken</button>
+        <button id="quizDeliveryBtn" class="secondary">Tank-Lieferung</button>
+      </div>
+    </div>
+  </div>
+
+    <div class="helper-strip">
+      <strong>So nutzen Sie die mobile Ansicht:</strong> 1) Oben „Diesel tanken“ oder „Tank-Lieferung“ wählen, 2) die Fragen im Assistenten Schritt für Schritt beantworten, 3) Zusammenfassung prüfen und auf „Speichern“ tippen. Datum & Uhrzeit werden automatisch übernommen und können im letzten Schritt geändert werden.
+    </div>
+
+    <div class="toolbar">
+      <button id="addRowBtn" class="primary">➕ Neue Zeile</button>
+      <button id="tankDeliveryBtn">⛽ Tank-Lieferung</button>
+      <button id="exportBtn">📤 Export nach Excel (CSV)</button>
+      <button id="importBtn">📥 Import aus CSV</button>
+      <button id="statsBtn">📊 Statistik</button>
+      <input type="file" id="importFile" accept=".csv,text/csv" style="display:none">
+      <span class="pill-label">Ende → Anfang nächste Zeile, Tank max. 4700 L</span>
+      <div class="month-label">
+        Monat:
+        <input type="month" id="monthPicker">
+      </div>
+    </div>
+
+    <div class="table-card">
+      <table id="dieselTable">
+        <thead>
+        <tr>
+          <th>Datum</th>
+          <th>Uhrzeit</th>
+          <th>Gerät</th>
+          <th>Zählerstand Anfang</th>
+          <th>Getankt (L)</th>
+          <th>Zählerstand Ende</th>
+          <th>Betriebsstunden/km gesamt</th>
+          <th>Bestand im Tank</th>
+          <th>Lieferant (nur Tank)</th>
+          <th>Getankt durch</th>
+          <th>Bemerkung</th>
+          <th class="col-actions">Aktionen</th>
+        </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <div id="deviceControls">
+      <span style="font-weight:600;">Geräteverwaltung:</span>
+      <input type="text" id="newDeviceName" placeholder="Neues Gerät">
+      <button id="addDeviceBtn">Gerät hinzufügen</button>
+      <select id="deviceListSelect"></select>
+      <button id="deleteDeviceBtn">Gerät löschen</button>
+    </div>
+
+    <div id="supplierControls">
+      <span style="font-weight:600;">Lieferantenverwaltung:</span>
+      <input type="text" id="newSupplierName" placeholder="Neuer Lieferant">
+      <button id="addSupplierBtn">Lieferant hinzufügen</button>
+      <select id="supplierListSelect"></select>
+      <button id="deleteSupplierBtn">Lieferant löschen</button>
+    </div>
+
+    <div id="userManagement">
+      <h3>Benutzerverwaltung <span class="badge-role">nur Superuser</span></h3>
+      <div class="user-form">
+        <input type="text" id="newUserName" placeholder="Benutzername">
+        <input type="password" id="newUserPassword" placeholder="Passwort">
+        <input type="text" id="newUserFullName" placeholder="Voller Name">
+        <select id="newUserRole">
+          <option value="user">Normaler Nutzer</option>
+          <option value="dispatcher">Dispatcher</option>
+          <option value="superuser">Superuser</option>
+        </select>
+        <button id="addUserBtn">Benutzer anlegen</button>
+      </div>
+      <div id="userList"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Аккуратный футер -->
+<div class="signature">
+  PCC Intermodal – interne Anwendung · Entwickelt von Mykyta Dolmatov
+</div>
+
+<!-- Floating + button for mobile -->
+<button id="fabAddRow" class="fab-add-row">＋</button>
+
+
+<!-- Quiz-Overlay (Mobil) -->
+<div id="quizOverlay" class="quiz-overlay">
+  <div class="quiz-dialog">
+    <div class="quiz-header" id="quizTitle"></div>
+    <div id="quizContent"></div>
+    <div class="quiz-actions">
+      <button type="button" class="quiz-back" id="quizBackBtn">Zurück</button>
+      <button type="button" class="quiz-next" id="quizNextBtn">Weiter</button>
+    </div>
+  </div>
+</div>
+
+<!-- Statistik-Overlay -->
+<div id="statsPanel" class="stats-panel">
+  <div class="stats-content">
+    <div class="stats-header">
+      <h3>Statistik für den Monat <span id="statsMonthLabel"></span></h3>
+      <button id="statsCloseBtn" class="stats-close-btn">Schließen</button>
+    </div>
+    <div class="stats-summary" id="statsSummary"></div>
+    <div class="stats-grid">
+      <div class="stats-block">
+        <h4>Diesel nach Gerät</h4>
+        <canvas id="statsDevicePie" width="260" height="260"></canvas>
+        <div class="stats-legend" id="statsDeviceLegend"></div>
+      </div>
+      <div class="stats-block">
+        <h4>Diesel nach Nutzer</h4>
+        <canvas id="statsUserBar" width="260" height="260"></canvas>
+        <div class="stats-legend" id="statsUserLegend"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // === Google Sheets Backend Settings ===
+  // Replace this URL with your deployed Google Apps Script Web App URL (Ends with /exec)
+  const API_URL = 'https://script.google.com/macros/s/AKfycbxnbhnOEdGY6Q1q5NEDkZNYF9APMDy6zdZLVzQIhqVkvP3vTVCqgNYEVuvwJ15DGlPd/exec';
+
+async function apiRequest(action, payload) {
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    // ВАЖНО: text/plain, чтобы не было preflight (OPTIONS)
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ action, ...payload })
+  });
+  if (!res.ok) {
+    throw new Error('HTTP ' + res.status + ' beim Google-Backend');
+  }
+  return res.json();
+}
+
+  /******** USERS (LOCAL) ********/
+  let users = [];
+  let currentUser = null;
+
+  function loadUsers() {
+    // Benutzer werden nur im Speicher gehalten – Standard-Liste unten.
+    if (!Array.isArray(users) || users.length === 0) {
+      users = [
+        { username: 'mdolmatov', password: '1234', role: 'superuser', fullName: 'Mykyta Dolmatov' },
+        { username: 'adamb', password: '1234', role: 'user', fullName: 'Adam Bujak' }
+      ];
+    }
+  }
+  function saveUsers(){
+    // Optional: hier könnte später Persistenz ins Backend ergänzt werden.
+  }
+  function findUser(u,p){ return users.find(x=>x.username===u && x.password===p); }
+
+  function renderUserList() {
+    const div = document.getElementById('userList');
+    let html = '<strong>Existierende Benutzer:</strong><ul>';
+    users.forEach(u=>{
+      html += '<li><strong>'+u.username+'</strong> – Rolle: '+u.role+' – Name: '+(u.fullName||'-');
+      if (currentUser && currentUser.role === "superuser" && u.username !== currentUser.username){
+        html += ' <button class="delete-user-btn" data-username="'+u.username+'">löschen</button>';
+      }
+      html += '</li>';
+    });
+    html += '</ul>';
+    div.innerHTML = html;
+
+    document.querySelectorAll(".delete-user-btn").forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        const uname = btn.dataset.username;
+        if (!confirm('Benutzer "'+uname+'" wirklich löschen?')) return;
+        users = users.filter(u => u.username !== uname);
+        saveUsers();
+        renderUserList();
+      });
+    });
+  }
+
+  /******** DEVICES / SUPPLIERS (LOCAL) ********/
+  const defaultDevices = [
+    "BLAU","ROT","DU-PC60 (Caddy)","DUPC5000","DUPC8000","DUPC9000","Kubota/Koga","DUPC88","DUPC90"
+  ];
+  let devices = [...defaultDevices];
+  function loadDevices(){
+    // Geräte kommen aus der Standardliste; keine persistente Speicherung nötig.
+  }
+  function saveDevices(){
+    // Optional: hier könnte später Persistenz ins Backend ergänzt werden.
+  }
+
+  const defaultSuppliers = ["Fettke","Brandöl"];
+  let suppliers = [...defaultSuppliers];
+  function loadSuppliers(){
+    // Lieferanten kommen aus der Standardliste; keine persistente Speicherung nötig.
+  }
+  function saveSuppliers(){
+    // Optional: hier könnte später Persistenz ins Backend ergänzt werden.
+  }
+
+  function renderDeviceAndSupplierLists(){
+    const devSelect = document.getElementById("deviceListSelect");
+    const supSelect = document.getElementById("supplierListSelect");
+    if (devSelect){
+      devSelect.innerHTML = "";
+      devices.forEach(d=>{
+        const opt=document.createElement("option");
+        opt.value=d; opt.textContent=d;
+        devSelect.appendChild(opt);
+      });
+    }
+    if (supSelect){
+      supSelect.innerHTML = "";
+      suppliers.forEach(s=>{
+        const opt=document.createElement("option");
+        opt.value=s; opt.textContent=s;
+        supSelect.appendChild(opt);
+      });
+    }
+  }
+
+  /******** DATA (Google Sheets Backend) ********/
+  let dieselData = {};
+  let currentMonthKey = "";
+
+  async function loadDieselDataForMonth(key){
+    try {
+      const res = await apiRequest('getMonth', { month: key });
+      dieselData[key] = res && Array.isArray(res.rows) ? { rows: res.rows } : { rows: [] };
+    } catch (e) {
+      console.error('Fehler beim Laden aus Google Sheets', e);
+      dieselData[key] = dieselData[key] || { rows: [] };
+      alert('Fehler beim Laden aus Google Sheets. Daten werden nur im Speicher gehalten, bis die Seite neu geladen wird.');
+    }
+  }
+
+  function ensureMonthObj(key){
+    if (!dieselData[key]) dieselData[key] = { rows:[] };
+    return dieselData[key];
+  }
+
+  async function saveDieselDataForMonth(key){
+    if (!key) return;
+    const monthObj = ensureMonthObj(key);
+    try {
+      await apiRequest('saveMonth', { month: key, rows: monthObj.rows || [] });
+    } catch (e) {
+      console.error('Fehler beim Speichern nach Google Sheets', e);
+      alert('Fehler beim Speichern nach Google Sheets. Bitte Verbindung prüfen.');
+    }
+  }
+
+  /******** DOM ********/
+  const loginView = document.getElementById("loginView");
+  const appView   = document.getElementById("appView");
+  const headerUserInfo = document.getElementById("headerUserInfo");
+  const currentUserNameSpan = document.getElementById("currentUserName");
+  const currentUserRoleSpan = document.getElementById("currentUserRole");
+  const logoutBtn = document.getElementById("logoutBtn");
+
+  const tableBody = document.querySelector("#dieselTable tbody");
+  const addRowBtn = document.getElementById("addRowBtn");
+  const tankDeliveryBtn = document.getElementById("tankDeliveryBtn");
+  const exportBtn = document.getElementById("exportBtn");
+  const importBtn = document.getElementById("importBtn");
+  const importFile = document.getElementById("importFile");
+  const addDeviceBtn = document.getElementById("addDeviceBtn");
+  const deleteDeviceBtn = document.getElementById("deleteDeviceBtn");
+  const newDeviceNameInput = document.getElementById("newDeviceName");
+  const deviceListSelect = document.getElementById("deviceListSelect");
+  const addSupplierBtn = document.getElementById("addSupplierBtn");
+  const deleteSupplierBtn = document.getElementById("deleteSupplierBtn");
+  const newSupplierNameInput = document.getElementById("newSupplierName");
+  const supplierListSelect = document.getElementById("supplierListSelect");
+  const monthPicker = document.getElementById("monthPicker");
+  const fabAddRow = document.getElementById("fabAddRow");
+  const statsBtn = document.getElementById("statsBtn");
+  const statsPanel = document.getElementById("statsPanel");
+  const statsCloseBtn = document.getElementById("statsCloseBtn");
+  const statsMonthLabel = document.getElementById("statsMonthLabel");
+  const statsSummary = document.getElementById("statsSummary");
+  const statsDevicePie = document.getElementById("statsDevicePie");
+  const statsUserBar = document.getElementById("statsUserBar");
+  const statsDeviceLegend = document.getElementById("statsDeviceLegend");
+  const statsUserLegend = document.getElementById("statsUserLegend");
+  const mobileQuiz = document.getElementById("mobileQuiz");
+  const quizOverlay = document.getElementById("quizOverlay");
+  const quizTitle = document.getElementById("quizTitle");
+  const quizContent = document.getElementById("quizContent");
+  const quizBackBtn = document.getElementById("quizBackBtn");
+  const quizNextBtn = document.getElementById("quizNextBtn");
+  const quizNormalBtn = document.getElementById("quizNormalBtn");
+  const quizDeliveryBtn = document.getElementById("quizDeliveryBtn");
+  const quizShowTableBtn = document.getElementById("quizShowTableBtn");
+
+
+  function parseNum(v){
+    if (v==="" || v==null) return null;
+    if (v==="–") return null;
+    const n = parseFloat(String(v).replace(",", "."));
+    return isNaN(n)?null:n;
+  }
+
+  function scrollTableToBottom() {
+    const card = document.querySelector(".table-card");
+    if (card) card.scrollTop = card.scrollHeight;
+  }
+
+  function getCurrentTimeString() {
+    const now = new Date();
+    const hh = String(now.getHours()).padStart(2, "0");
+    const mm = String(now.getMinutes()).padStart(2, "0");
+    return hh + ":" + mm;
+  }
+
+  function getCurrentDateString() {
+    return new Date().toISOString().slice(0, 10);
+  }
+
+  function createDeviceSelect(){
+    const sel = document.createElement("select");
+    sel.className = "table-select device-select device";
+    const opt0 = document.createElement("option");
+    opt0.value=""; opt0.textContent="-- wählen --";
+    sel.appendChild(opt0);
+    devices.forEach(d=>{
+      const o=document.createElement("option");
+      o.value=d; o.textContent=d;
+      sel.appendChild(o);
+    });
+    return sel;
+  }
+
+  function createSupplierSelect(){
+    const sel = document.createElement("select");
+    sel.className = "table-select supplier-select";
+    const opt0=document.createElement("option");
+    opt0.value=""; opt0.textContent="-- wählen --";
+    sel.appendChild(opt0);
+    suppliers.forEach(s=>{
+      const o=document.createElement("option");
+      o.value=s; o.textContent=s;
+      sel.appendChild(o);
+    });
+    return sel;
+  }
+
+  function attachRowEvents(tr){
+    const inputs = tr.querySelectorAll("input, select");
+    inputs.forEach(el=>{
+      el.addEventListener("input", ()=>{ recalcAllForCurrentMonth(); });
+    });
+    const delBtn = tr.querySelector(".delete-btn");
+    if (delBtn){
+      delBtn.addEventListener("click", ()=>{
+        if (!currentUser || currentUser.role!=="superuser") return;
+        if (!confirm("Diese Zeile wirklich löschen?")) return;
+        tr.remove();
+        recalcAllForCurrentMonth();
+        scrollTableToBottom();
+      });
+    }
+  }
+
+  function addRow(copyFromPrev,rowType="normal"){
+    const tr=document.createElement("tr");
+    tr.dataset.rowType=rowType;
+    tr.dataset.owner = currentUser ? currentUser.username : "";
+    if (rowType==="delivery") tr.classList.add("delivery-row");
+
+    const tdDate=document.createElement("td");
+    const inDate=document.createElement("input");
+    inDate.type="date"; inDate.className="table-input date-input date";
+    inDate.value = getCurrentDateString();
+    tdDate.appendChild(inDate); tr.appendChild(tdDate);
+
+    const tdTime=document.createElement("td");
+    const inTime=document.createElement("input");
+    inTime.type="time"; inTime.className="table-input time-input time";
+    inTime.value = getCurrentTimeString();
+    tdTime.appendChild(inTime); tr.appendChild(tdTime);
+
+    const tdDev=document.createElement("td");
+    if (rowType==="delivery"){
+      tdDev.textContent = "Tank";
+      tdDev.className = "device-label";
+    } else {
+      tdDev.appendChild(createDeviceSelect());
+    }
+    tr.appendChild(tdDev);
+
+    const tdAnf=document.createElement("td");
+    const inAnf=document.createElement("input");
+    inAnf.type="number"; inAnf.step="1";
+    inAnf.className="table-input number-input anfang";
+    tdAnf.appendChild(inAnf);
+    tr.appendChild(tdAnf);
+
+    const tdLit=document.createElement("td");
+    const inLit=document.createElement("input");
+    inLit.type="number"; inLit.step="1";
+    inLit.className="table-input number-input diesel";
+    tdLit.appendChild(inLit); tr.appendChild(tdLit);
+
+    const tdEnd=document.createElement("td");
+    const inEnd=document.createElement("input");
+    inEnd.type="number"; inEnd.step="1";
+    inEnd.className="table-input number-input ende";
+    tdEnd.appendChild(inEnd);
+    tr.appendChild(tdEnd);
+
+    const tdBt=document.createElement("td");
+    const inBt=document.createElement("input");
+    inBt.type="number"; inBt.step="1";
+    inBt.className="table-input number-input betr-total";
+    tdBt.appendChild(inBt);
+    tr.appendChild(tdBt);
+
+    const tdTank=document.createElement("td");
+    const inTank=document.createElement("input");
+    inTank.type="number"; inTank.step="1";
+    inTank.className="table-input number-input tankstock";
+    tdTank.appendChild(inTank); tr.appendChild(tdTank);
+
+    const tdSup=document.createElement("td");
+    if (rowType==="delivery"){
+      tdSup.appendChild(createSupplierSelect());
+    } else {
+      tdSup.textContent="–";
+    }
+    tr.appendChild(tdSup);
+
+    const tdBy=document.createElement("td");
+    const inBy=document.createElement("input");
+    inBy.type="text"; inBy.className="table-input getankt-by";
+    inBy.value=currentUser?.fullName || currentUser?.username || "";
+    tdBy.appendChild(inBy); tr.appendChild(tdBy);
+
+    const tdCom=document.createElement("td");
+    const inCom=document.createElement("input");
+    inCom.type="text"; inCom.className="table-input comment";
+    tdCom.appendChild(inCom); tr.appendChild(tdCom);
+
+    const tdAct=document.createElement("td");
+    tdAct.className = "col-actions-cell";
+    const delBtn=document.createElement("button");
+    delBtn.type="button";
+    delBtn.textContent="🗑";
+    delBtn.className="delete-btn";
+    tdAct.appendChild(delBtn); tr.appendChild(tdAct);
+
+    if (copyFromPrev && tableBody.rows.length>0){
+      const prev=tableBody.rows[tableBody.rows.length-1];
+      const pDev=prev.querySelector(".device")?.value || "";
+      const pEnd=prev.querySelector(".ende")?.value || "";
+      if (rowType==="normal" && pDev && tdDev.querySelector(".device")) {
+        tdDev.querySelector(".device").value=pDev;
+      }
+      if (pEnd) inAnf.value=pEnd;
+    }
+
+    tableBody.appendChild(tr);
+    attachRowEvents(tr);
+    applyRolePermissionsToRow(tr);
+    scrollTableToBottom();
+    return tr;
+  }
+
+  function addRowFromData(r){
+    const tr=document.createElement("tr");
+    const rowType = r.type || "normal";
+    tr.dataset.rowType=rowType;
+    tr.dataset.owner = r.owner || "";
+    if (rowType==="delivery") tr.classList.add("delivery-row");
+
+    const tdDate=document.createElement("td");
+    const inDate=document.createElement("input");
+    inDate.type="date"; inDate.className="table-input date-input date";
+    inDate.value=r.date||"";
+    tdDate.appendChild(inDate); tr.appendChild(tdDate);
+
+    const tdTime=document.createElement("td");
+    const inTime=document.createElement("input");
+    inTime.type="time"; inTime.className="table-input time-input time";
+    inTime.value=r.time||"";
+    tdTime.appendChild(inTime); tr.appendChild(tdTime);
+
+    const tdDev=document.createElement("td");
+    if (rowType==="delivery"){
+      tdDev.textContent="Tank";
+      tdDev.className="device-label";
+    } else {
+      const selDev=createDeviceSelect();
+      if (r.device) {
+        selDev.value = r.device;
+        if (selDev.value !== r.device) {
+          const opt = document.createElement("option");
+          opt.value = r.device;
+          opt.textContent = r.device + " (alt)";
+          opt.dataset.archived = "1";
+          selDev.appendChild(opt);
+          selDev.value = r.device;
+        }
+      }
+      tdDev.appendChild(selDev);
+    }
+    tr.appendChild(tdDev);
+
+    const tdAnf=document.createElement("td");
+    const inAnf=document.createElement("input");
+    inAnf.type="number"; inAnf.step="1";
+    inAnf.className="table-input number-input anfang";
+    inAnf.value=r.anfang!=null?String(r.anfang):"";
+    tdAnf.appendChild(inAnf);
+    tr.appendChild(tdAnf);
+
+    const tdLit=document.createElement("td");
+    const inLit=document.createElement("input");
+    inLit.type="number"; inLit.step="1";
+    inLit.className="table-input number-input diesel";
+    inLit.value=r.diesel!=null?String(r.diesel):"";
+    tdLit.appendChild(inLit); tr.appendChild(tdLit);
+
+    const tdEnd=document.createElement("td");
+    const inEnd=document.createElement("input");
+    inEnd.type="number"; inEnd.step="1";
+    inEnd.className="table-input number-input ende";
+    inEnd.value=r.ende!=null?String(r.ende):"";
+    tdEnd.appendChild(inEnd);
+    tr.appendChild(tdEnd);
+
+    const tdBt=document.createElement("td");
+    const inBt=document.createElement("input");
+    inBt.type="number"; inBt.step="1";
+    inBt.className="table-input number-input betr-total";
+    inBt.value=r.betrTotal!=null?String(r.betrTotal):"";
+    tdBt.appendChild(inBt);
+    tr.appendChild(tdBt);
+
+    const tdTank=document.createElement("td");
+    const inTank=document.createElement("input");
+    inTank.type="number"; inTank.step="1";
+    inTank.className="table-input number-input tankstock";
+    inTank.value=r.tankStock!=null?String(r.tankStock):"";
+    tdTank.appendChild(inTank); tr.appendChild(tdTank);
+
+    const tdSup=document.createElement("td");
+    if (rowType==="delivery"){
+      const selSup=createSupplierSelect();
+      if (r.supplier) {
+        selSup.value = r.supplier;
+        if (selSup.value !== r.supplier) {
+          const opt=document.createElement("option");
+          opt.value=r.supplier;
+          opt.textContent=r.supplier + " (alt)";
+          opt.dataset.archived="1";
+          selSup.appendChild(opt);
+          selSup.value=r.supplier;
+        }
+      }
+      tdSup.appendChild(selSup);
+    } else {
+      tdSup.textContent="–";
+    }
+    tr.appendChild(tdSup);
+
+    const tdBy=document.createElement("td");
+    const inBy=document.createElement("input");
+    inBy.type="text"; inBy.className="table-input getankt-by";
+    inBy.value=r.by||currentUser?.fullName||currentUser?.username||"";
+    tdBy.appendChild(inBy); tr.appendChild(tdBy);
+
+    const tdCom=document.createElement("td");
+    const inCom=document.createElement("input");
+    inCom.type="text"; inCom.className="table-input comment";
+    inCom.value=r.comment||"";
+    tdCom.appendChild(inCom); tr.appendChild(tdCom);
+
+    const tdAct=document.createElement("td");
+    tdAct.className = "col-actions-cell";
+    const delBtn=document.createElement("button");
+    delBtn.type="button";
+    delBtn.textContent="🗑";
+    delBtn.className="delete-btn";
+    tdAct.appendChild(delBtn); tr.appendChild(tdAct);
+
+    tableBody.appendChild(tr);
+    attachRowEvents(tr);
+    applyRolePermissionsToRow(tr);
+  }
+
+  /******** ROLES ********/
+  function isLockedForCurrentUser(tr){
+    if (!currentUser || currentUser.role !== "user") return false;
+    const owner = tr.dataset.owner || "";
+    if (owner !== currentUser.username) return false;
+
+    const rows = Array.from(tableBody.rows);
+    const idx = rows.indexOf(tr);
+    if (idx === -1) return false;
+
+    for (let i = idx + 1; i < rows.length; i++){
+      const otherOwner = rows[i].dataset.owner || "";
+      if (otherOwner && otherOwner !== currentUser.username){
+        return true;
+      }
+    }
+    return false;
+  }
+
+  function applyRolePermissionsToRow(tr){
+    if (!currentUser) return;
+    const role = currentUser.role;
+    const isUser = role === "user";
+    const rowType = tr.dataset.rowType || "normal";
+    const owner = tr.dataset.owner || "";
+    const isOwner = owner === currentUser.username;
+    const lockedForOwner = isUser && isOwner && isLockedForCurrentUser(tr);
+
+    const deleteBtn = tr.querySelector(".delete-btn");
+
+    if (isUser && (!isOwner || lockedForOwner)) {
+      const inputs = tr.querySelectorAll("input");
+      const selects = tr.querySelectorAll("select");
+      inputs.forEach(inp => {
+        inp.readOnly = true;
+        inp.classList.add("readonly");
+      });
+      selects.forEach(sel => { sel.disabled = true; });
+      if (deleteBtn) deleteBtn.style.display = "none";
+      return;
+    }
+
+    const anfang    = tr.querySelector(".anfang");
+    const ende      = tr.querySelector(".ende");
+    const betrTotal = tr.querySelector(".betr-total");
+    const byInput   = tr.querySelector(".getankt-by");
+    const diesel    = tr.querySelector(".diesel");
+    const tankStock = tr.querySelector(".tankstock");
+    const supplierSel = tr.querySelector(".supplier-select");
+
+    if (rowType === "normal") {
+      [anfang, ende].forEach(inp => {
+        if (!inp) return;
+        inp.readOnly = isUser;
+        if (isUser) inp.classList.add("readonly");
+        else        inp.classList.remove("readonly");
+      });
+      if (betrTotal){
+        betrTotal.readOnly = false;
+        betrTotal.classList.remove("readonly");
+      }
+    }
+
+    if (rowType === "delivery") {
+      const onlySuper = !(role === "superuser");
+      [anfang, ende].forEach(inp=>{
+        if (!inp) return;
+        inp.readOnly = onlySuper;
+        if (onlySuper) inp.classList.add("readonly");
+        else inp.classList.remove("readonly");
+      });
+      if (betrTotal){
+        betrTotal.readOnly = onlySuper;
+        if (onlySuper) betrTotal.classList.add("readonly");
+        else betrTotal.classList.remove("readonly");
+      }
+      if (supplierSel){
+        supplierSel.disabled = isUser && !isOwner;
+      }
+    }
+
+    if (diesel) {
+      diesel.readOnly = false;
+      diesel.classList.remove("readonly");
+    }
+    if (tankStock) {
+      tankStock.readOnly = !(role === "superuser");
+      if (tankStock.readOnly) tankStock.classList.add("readonly");
+      else tankStock.classList.remove("readonly");
+    }
+    if (byInput){
+      byInput.readOnly = isUser;
+      if (isUser) byInput.classList.add("readonly");
+      else        byInput.classList.remove("readonly");
+    }
+
+    if (deleteBtn){
+      deleteBtn.style.display = (role === "superuser") ? "inline-block" : "none";
+    }
+  }
+
+  function updateRoleUI(){
+    const devCtrl=document.getElementById("deviceControls");
+    const supCtrl=document.getElementById("supplierControls");
+    const userMgmt=document.getElementById("userManagement");
+    if (!currentUser){
+      devCtrl.style.display="none";
+      supCtrl.style.display="none";
+      userMgmt.style.display="none";
+    } else {
+      if (currentUser.role==="dispatcher" || currentUser.role==="superuser")
+        devCtrl.style.display="flex";
+      else devCtrl.style.display="none";
+
+      if (currentUser.role==="superuser") {
+        supCtrl.style.display="flex";
+        userMgmt.style.display="block";
+      } else {
+        supCtrl.style.display="none";
+        userMgmt.style.display="none";
+      }
+    }
+
+    deleteDeviceBtn.disabled   = !(currentUser && currentUser.role==="superuser");
+    deleteSupplierBtn.disabled = !(currentUser && currentUser.role==="superuser");
+
+    if (statsBtn){
+      statsBtn.style.display = (currentUser && currentUser.role==="superuser") ? "inline-flex" : "none";
+    }
+
+    tableBody.querySelectorAll("tr").forEach(applyRolePermissionsToRow);
+  }
+
+  /******** CALC + SAVE ********/
+  function recalcAllForCurrentMonth(){
+    if (!currentMonthKey) return;
+
+    let tank = 0;
+    let prevEnd = null;
+
+    const rows = Array.from(tableBody.rows);
+
+    rows.forEach(tr=>{
+      const rowType = tr.dataset.rowType || "normal";
+      const devSel   = tr.querySelector(".device");
+      const inAnf    = tr.querySelector(".anfang");
+      const inLit    = tr.querySelector(".diesel");
+      const inEnd    = tr.querySelector(".ende");
+      const inBt     = tr.querySelector(".betr-total");
+      const inTank   = tr.querySelector(".tankstock");
+      const supplierSel = tr.querySelector(".supplier-select");
+      const dateVal = tr.querySelector(".date")?.value || "";
+      const timeVal = tr.querySelector(".time")?.value || "";
+      const byVal   = tr.querySelector(".getankt-by")?.value || "";
+
+      const device   = devSel ? devSel.value : "";
+      let   anfang   = inAnf ? parseNum(inAnf.value) : null;
+      let   diesel   = parseNum(inLit?.value);
+      let   ende     = inEnd ? parseNum(inEnd.value) : null;
+      const betrTotal= inBt  ? parseNum(inBt.value) : null;
+
+      if (rowType==="normal" || rowType==="delivery"){
+        if (prevEnd!=null && (anfang==null || (currentUser && currentUser.role==="user"))){
+          anfang = prevEnd;
+          if (inAnf) inAnf.value = String(Math.round(anfang));
+        }
+
+        if (anfang!=null && diesel!=null && rowType==="normal"){
+          const calcEnd = Math.round(anfang + diesel);
+          if (inEnd){
+            inEnd.value = String(calcEnd);
+            ende = calcEnd;
+          }
+        }
+        if (ende!=null){
+          prevEnd = ende;
+        }
+
+        if (rowType==="normal" && diesel!=null){
+          tank -= diesel;
+        } else if (rowType==="delivery"){
+          tank = 4700;
+        }
+      }
+
+      if (tank>4700) tank=4700;
+      if (tank<0)   tank=0;
+
+      if (inTank){
+        if (rowType==="delivery"){
+          inTank.value = "4700";
+        } else {
+          inTank.value = String(Math.round(tank));
+        }
+      }
+
+      let completed=false;
+      if (rowType==="normal"){
+        const devFilled = !!device;
+        const dieselOk  = diesel!=null;
+        const endeOk    = (inEnd?.value || "") !== "";
+        const betrOk    = betrTotal!=null;
+        completed = !!dateVal && !!timeVal && devFilled && dieselOk && endeOk && betrOk && !!byVal;
+      } else {
+        const tankOk   = (inTank?.value || "") !== "";
+        const supplierFilled = (supplierSel?.value || "") !== "";
+        completed = !!dateVal && !!timeVal && supplierFilled && !!byVal && tankOk;
+      }
+      tr.dataset.completed = completed ? "1":"0";
+    });
+
+    saveCurrentMonthFromTable();
+    updateRoleUI();
+  }
+
+function saveCurrentMonthFromTable(){
+  if (!currentMonthKey) return;
+  const monthObj = ensureMonthObj(currentMonthKey);
+  const dataRows = [];
+
+  Array.from(tableBody.rows).forEach(tr => {
+    const rowType  = tr.dataset.rowType || "normal";
+    const owner    = tr.dataset.owner || "";
+    const date     = tr.querySelector(".date")?.value || "";
+    const time     = tr.querySelector(".time")?.value || "";
+    const device   = tr.querySelector(".device")?.value || "";
+    const supplier = tr.querySelector(".supplier-select")?.value || "";
+
+    const anfangEl    = tr.querySelector(".anfang");
+    const dieselEl    = tr.querySelector(".diesel");
+    const endeEl      = tr.querySelector(".ende");
+    const betrTotalEl = tr.querySelector(".betr-total");
+    const tankStockEl = tr.querySelector(".tankstock");
+
+    const anfang    = anfangEl    ? parseNum(anfangEl.value)    : null;
+    const diesel    = dieselEl    ? parseNum(dieselEl.value)    : null;
+    const ende      = endeEl      ? parseNum(endeEl.value)      : null;
+    const betrTotal = betrTotalEl ? parseNum(betrTotalEl.value) : null;
+    const tankStock = tankStockEl ? parseNum(tankStockEl.value) : null;
+
+    const by      = tr.querySelector(".getankt-by")?.value || "";
+    const comment = tr.querySelector(".comment")?.value || "";
+
+    // --- проверка: полностью пустая строка? ---
+    const isEmpty =
+      !date && !time && !device && !supplier &&
+      (anfang == null || anfang === 0) &&
+      (diesel == null || diesel === 0) &&
+      (ende == null || ende === 0) &&
+      (betrTotal == null || betrTotal === 0) &&
+      (tankStock == null || tankStock === 0) &&
+      !by && !comment;
+
+    if (isEmpty) {
+      // эту строку НЕ сохраняем в Google Sheets
+      return;
+    }
+
+    dataRows.push({
+      type: rowType,
+      owner,
+      date, time, device,
+      supplier,
+      anfang:    anfang    != null ? Math.round(anfang)    : null,
+      diesel:    diesel    != null ? Math.round(diesel)    : null,
+      ende:      ende      != null ? Math.round(ende)      : null,
+      betrTotal: betrTotal != null ? Math.round(betrTotal) : null,
+      tankStock: tankStock != null ? Math.round(tankStock) : null,
+      by,
+      comment
+    });
+  });
+
+  monthObj.rows = dataRows;
+  // Сохраняем месяц в Google Sheets
+  saveDieselDataForMonth(currentMonthKey);
+}
+
+
+  async function loadMonthIntoTable(key){
+    currentMonthKey=key;
+    tableBody.innerHTML="";
+    await loadDieselDataForMonth(key);
+    const monthObj=ensureMonthObj(key);
+    if (monthObj.rows && monthObj.rows.length){
+      monthObj.rows.forEach(r=>addRowFromData(r));
+    } else {
+      addRow(false,"normal");
+    }
+    updateRoleUI();
+    recalcAllForCurrentMonth();
+    scrollTableToBottom();
+  }
+
+  /******** DEVICES / SUPPLIERS OPS ********/
+  function addDevice(){
+    const name=newDeviceNameInput.value.trim();
+    if (!name) return;
+    if (!devices.includes(name)){
+      devices.push(name); saveDevices();
+    }
+    document.querySelectorAll(".device-select").forEach(sel=>{
+      if (!Array.from(sel.options).some(o=>o.value===name)){
+        const opt=document.createElement("option");
+        opt.value=name; opt.textContent=name;
+        sel.appendChild(opt);
+      }
+    });
+    newDeviceNameInput.value="";
+    renderDeviceAndSupplierLists();
+  }
+
+  function deleteDevice(){
+    const val = deviceListSelect.value;
+    if (!val) return;
+    if (!confirm('Gerät "'+val+'" nur aus der Auswahl löschen? Vorhandene Einträge bleiben unverändert.')) return;
+
+    devices = devices.filter(d=>d!==val);
+    saveDevices();
+    renderDeviceAndSupplierLists();
+  }
+
+  function addSupplier(){
+    const name=newSupplierNameInput.value.trim();
+    if (!name) return;
+    if (!suppliers.includes(name)){
+      suppliers.push(name); saveSuppliers();
+    }
+    document.querySelectorAll(".supplier-select").forEach(sel=>{
+      if (!Array.from(sel.options).some(o=>o.value===name)){
+        const opt=document.createElement("option");
+        opt.value=name; opt.textContent=name;
+        sel.appendChild(opt);
+      }
+    });
+    newSupplierNameInput.value="";
+    renderDeviceAndSupplierLists();
+  }
+
+  function deleteSupplier(){
+    const val = supplierListSelect.value;
+    if (!val) return;
+    if (!confirm('Lieferant "'+val+'" nur aus der Auswahl löschen? Vorhandene Einträge bleiben unverändert.')) return;
+
+    suppliers = suppliers.filter(s=>s!==val);
+    saveSuppliers();
+    renderDeviceAndSupplierLists();
+  }
+
+  /******** EXPORT / IMPORT ********/
+  function exportToCSV(){
+    const table=document.getElementById("dieselTable");
+    // BOM как настоящий символ, не строка "\uFEFF"
+    let csv = '\uFEFF';
+    const rows=table.querySelectorAll("tr");
+    rows.forEach(row=>{
+      const cells=row.querySelectorAll("th,td");
+      const rowData=[];
+      cells.forEach((cell,idx)=>{
+        if (idx>10) return; // до Bemerkung включительно
+        let text="";
+        const input=cell.querySelector("input,select");
+        if (input){
+          if (input.tagName.toLowerCase()==="select") text=input.value||"";
+          else text=input.value||"";
+        } else text=cell.innerText;
+        text=text.replace(/"/g,'""');
+        rowData.push('"'+text+'"');
+      });
+      // Нормальный перевод строки, не литерал "\n"
+      csv += rowData.join(";") + "\n";
+    });
+    const blob=new Blob([csv],{type:"text/csv;charset=utf-8;"});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement("a");
+    a.href=url;
+    a.download=`diesel_${currentMonthKey||"daten"}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  function parseCSV(text){
+    // убрать BOM, если есть
+    if (text && text.charCodeAt(0) === 0xFEFF) {
+      text = text.slice(1);
+    }
+    const lines = text.split(/\r?\n/).filter(l=>l.trim()!=="");
+    if (lines.length<=1) return [];
+    const rows=[];
+    for (let i=1;i<lines.length;i++){
+      const line = lines[i];
+      const cols = [];
+      let cur="", inQuotes=false;
+      for (let j=0;j<line.length;j++){
+        const ch=line[j];
+        if (ch==='"'){
+          if (inQuotes && line[j+1]==='"'){ cur+='"'; j++; }
+          else inQuotes=!inQuotes;
+        } else if (ch===';' && !inQuotes){
+          cols.push(cur); cur="";
+        } else {
+          cur+=ch;
+        }
+      }
+      cols.push(cur);
+      rows.push(cols);
+    }
+    return rows;
+  }
+
+  function importFromCSV(file){
+    const reader=new FileReader();
+    reader.onload = e=>{
+      let text = e.target.result;
+      const rows = parseCSV(text);
+      if (!rows.length){
+        alert("CSV ist leer oder konnte nicht gelesen werden.");
+        return;
+      }
+      const imported=[];
+      rows.forEach(cols=>{
+        if (cols.length<1) return;
+        const date = (cols[0]||"").trim();
+        if (!date) return;
+        const time = (cols[1]||"").trim();
+        const geraet = (cols[2]||"").trim();
+        const anfang = parseNum((cols[3]||"").trim());
+        const diesel = parseNum((cols[4]||"").trim());
+        const ende   = parseNum((cols[5]||"").trim());
+        const betr   = parseNum((cols[6]||"").trim());
+        const tank   = parseNum((cols[7]||"").trim());
+        const liefer = (cols[8]||"").trim();
+        const by     = (cols[9]||"").trim();
+        const comment= (cols[10]||"").trim();
+
+        const type = geraet==="Tank" ? "delivery" : "normal";
+        imported.push({
+          type,
+          owner: currentUser ? currentUser.username : "",
+          date,
+          time,
+          device: type==="normal" ? geraet : "",
+          supplier: type==="delivery" ? liefer : "",
+          anfang: anfang!=null?Math.round(anfang):null,
+          diesel: diesel!=null?Math.round(diesel):null,
+          ende:   ende!=null?Math.round(ende):null,
+          betrTotal: betr!=null?Math.round(betr):null,
+          tankStock: tank!=null?Math.round(tank):null,
+          by,
+          comment
+        });
+      });
+
+      if (!currentMonthKey){
+        alert("Kein Monat gewählt.");
+        return;
+      }
+      const monthObj = ensureMonthObj(currentMonthKey);
+      monthObj.rows = imported;
+      saveDieselData();
+      loadMonthIntoTable(currentMonthKey);
+      alert("CSV Import abgeschlossen.");
+    };
+    reader.readAsText(file,'utf-8');
+  }
+
+  /******** STATS ********/
+  const pieColors = [
+    "#f58220","#ffb74d","#4caf50","#29b6f6","#ab47bc",
+    "#ff7043","#9ccc65","#26c6da","#ffa726","#8d6e63"
+  ];
+
+  function computeStatsForCurrentMonth(){
+    if (!currentMonthKey) return {byDevice:{}, byUser:{}, total:0, entries:0};
+    const monthObj = ensureMonthObj(currentMonthKey);
+    const rows = monthObj.rows || [];
+    const byDevice = {};
+    const byUser = {};
+    let total = 0;
+    let entries = 0;
+
+    rows.forEach(r=>{
+      const diesel = r.diesel || 0;
+      if (!diesel || !r.device) return;
+      total += diesel;
+      entries += 1;
+      byDevice[r.device] = (byDevice[r.device]||0) + diesel;
+      const user = (r.by && r.by.trim()) ? r.by.trim() : "Unbekannt";
+      byUser[user] = (byUser[user]||0) + diesel;
+    });
+
+    return {byDevice, byUser, total, entries};
+  }
+
+  function renderPieChart(canvas, dataMap, legendContainer){
+    const ctx = canvas.getContext("2d");
+    const w = canvas.width;
+    const h = canvas.height;
+    ctx.clearRect(0,0,w,h);
+
+    const entries = Object.entries(dataMap).filter(([k,v])=>v>0);
+    if (!entries.length){
+      ctx.fillStyle = "#999";
+      ctx.font = "12px system-ui";
+      ctx.textAlign = "center";
+      ctx.fillText("Keine Daten", w/2, h/2);
+      if (legendContainer) legendContainer.innerHTML = "<div>Keine Daten verfügbar.</div>";
+      return;
+    }
+    const total = entries.reduce((s,[,v])=>s+v,0);
+    const cx = w/2;
+    const cy = h/2;
+    const radius = Math.min(w,h)/2 - 10;
+    let startAngle = -Math.PI/2;
+
+    if (legendContainer) legendContainer.innerHTML = "";
+    entries.forEach(([label,value],idx)=>{
+      const angle = (value/total)*Math.PI*2;
+      const endAngle = startAngle + angle;
+      const color = pieColors[idx % pieColors.length];
+
+      ctx.beginPath();
+      ctx.moveTo(cx,cy);
+      ctx.arc(cx,cy,radius,startAngle,endAngle);
+      ctx.closePath();
+      ctx.fillStyle = color;
+      ctx.fill();
+
+      startAngle = endAngle;
+
+      if (legendContainer){
+        const div = document.createElement("div");
+        const box = document.createElement("span");
+        box.className = "legend-color";
+        box.style.backgroundColor = color;
+        const txt = document.createElement("span");
+        const percent = (value/total*100).toFixed(1);
+        txt.textContent = label + " – " + value + " L ("+percent+"%)";
+        div.appendChild(box);
+        div.appendChild(txt);
+        legendContainer.appendChild(div);
+      }
+    });
+  }
+
+  function renderBarChart(canvas, dataMap, legendContainer){
+    const ctx = canvas.getContext("2d");
+    const w = canvas.width;
+    const h = canvas.height;
+    ctx.clearRect(0,0,w,h);
+
+    const entries = Object.entries(dataMap).filter(([k,v])=>v>0);
+    if (!entries.length){
+      ctx.fillStyle = "#999";
+      ctx.font = "12px system-ui";
+      ctx.textAlign = "center";
+      ctx.fillText("Keine Daten", w/2, h/2);
+      if (legendContainer) legendContainer.innerHTML = "<div>Keine Daten verfügbar.</div>";
+      return;
+    }
+    const values = entries.map(([,v])=>v);
+    const maxVal = Math.max(...values);
+    const paddingLeft = 40;
+    const paddingBottom = 24;
+    const chartW = w - paddingLeft - 10;
+    const chartH = h - paddingBottom - 20;
+    const barWidth = chartW / entries.length * 0.7;
+    const gap = chartW / entries.length * 0.3;
+    const baseY = 10 + chartH;
+
+    ctx.strokeStyle = "#ccc";
+    ctx.beginPath();
+    ctx.moveTo(paddingLeft, baseY);
+    ctx.lineTo(paddingLeft + chartW, baseY);
+    ctx.stroke();
+
+    ctx.font = "10px system-ui";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+
+    if (legendContainer) legendContainer.innerHTML = "";
+
+    entries.forEach(([label,value],idx)=>{
+      const color = pieColors[idx % pieColors.length];
+      const x = paddingLeft + idx*(barWidth+gap) + gap/2;
+      const barH = maxVal ? (value/maxVal)*chartH : 0;
+      const y = baseY - barH;
+
+      ctx.fillStyle = color;
+      ctx.fillRect(x,y,barWidth,barH);
+
+      ctx.save();
+      ctx.translate(x+barWidth/2, baseY+2);
+      ctx.rotate(-Math.PI/4);
+      ctx.fillStyle = "#555";
+      const shortLabel = label.length>10 ? label.slice(0,10)+"…" : label;
+      ctx.fillText(shortLabel,0,0);
+      ctx.restore();
+
+      ctx.fillStyle = "#000";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "bottom";
+      ctx.fillText(value, x+barWidth/2, y-2);
+
+      if (legendContainer){
+        const div = document.createElement("div");
+        const box = document.createElement("span");
+        box.className = "legend-color";
+        box.style.backgroundColor = color;
+        const txt = document.createElement("span");
+        txt.textContent = label + " – " + value + " L";
+        div.appendChild(box);
+        div.appendChild(txt);
+        legendContainer.appendChild(div);
+      }
+    });
+  }
+
+  function openStats(){
+    if (!currentUser || currentUser.role !== "superuser"){
+      alert("Nur Superuser können die Statistik ansehen.");
+      return;
+    }
+    if (!currentMonthKey){
+      alert("Kein Monat gewählt.");
+      return;
+    }
+    const {byDevice, byUser, total, entries} = computeStatsForCurrentMonth();
+    const monthLabel = currentMonthKey || "";
+    statsMonthLabel.textContent = monthLabel;
+
+    if (total>0){
+      statsSummary.textContent = "Gesamtverbrauch: " + total + " L – Einträge: " + entries;
+    } else {
+      statsSummary.textContent = "Keine Diesel-Verbrauchsdaten für diesen Monat.";
+    }
+
+    renderPieChart(statsDevicePie, byDevice, statsDeviceLegend);
+    renderBarChart(statsUserBar, byUser, statsUserLegend);
+
+    statsPanel.style.display = "flex";
+  }
+
+  function closeStats(){
+    statsPanel.style.display = "none";
+  }
+
+  /******** UI ********/
+  function showApp(){
+    loginView.style.display="none";
+    appView.style.display="block";
+    headerUserInfo.style.display="flex";
+    currentUserNameSpan.textContent=currentUser.username;
+    currentUserRoleSpan.textContent=
+      currentUser.role==="superuser"?"Superuser":
+      currentUser.role==="dispatcher"?"Dispatcher":"Normaler Nutzer";
+
+    if (!monthPicker.value){
+      const t=new Date();
+      const y=t.getFullYear(), m=t.getMonth()+1;
+      monthPicker.value=`${y.toString().padStart(4,"0")}-${m.toString().padStart(2,"0")}`;
+    }
+    loadMonthIntoTable(monthPicker.value);
+    if (currentUser.role==="superuser") renderUserList();
+    renderDeviceAndSupplierLists();
+  }
+  function showLogin(){
+    appView.style.display="none";
+    headerUserInfo.style.display="none";
+    loginView.style.display="block";
+    currentUser=null;
+  }
+
+
+  /******** MOBILE QUIZ (GUIDED INPUT) ********/
+  const quizState = {
+    type: null,
+    step: 0,
+    data: {}
+  };
+
+  function isMobileView(){
+    return window.matchMedia && window.matchMedia("(max-width: 900px)").matches;
+  }
+
+  function openQuiz(type){
+    if (!isMobileView()){
+      const toolbar = document.querySelector(".toolbar");
+      const tableCard = document.querySelector(".table-card");
+      if (toolbar) toolbar.style.display = "flex";
+      if (tableCard) tableCard.style.display = "block";
+      return;
+    }
+    quizState.type = type; // "normal" oder "delivery"
+    quizState.step = 0;
+    quizState.data = {};
+    updateQuizStep();
+    if (quizOverlay) quizOverlay.style.display = "flex";
+  }
+
+  function closeQuiz(){
+    if (quizOverlay) quizOverlay.style.display = "none";
+  }
+
+  function updateQuizStep(){
+    if (!quizContent) return;
+    quizContent.innerHTML = "";
+    if (quizState.type === "normal"){
+      quizTitle.textContent = "Diesel tanken (Eintrag)";
+      renderNormalQuizStep();
+    } else if (quizState.type === "delivery"){
+      quizTitle.textContent = "Tank-Lieferung (Eintrag)";
+      renderDeliveryQuizStep();
+    }
+  }
+
+  
+function renderNormalQuizStep(){
+    const step = quizState.step;
+    const div = document.createElement("div");
+    div.className = "quiz-question";
+
+    if (step === 0){
+      div.innerHTML = "<p>Welches Gerät hast du betankt?</p>";
+      const sel = createDeviceSelect();
+      sel.id = "quizDevice";
+      sel.style.marginTop = "4px";
+      if (quizState.data.device) sel.value = quizState.data.device;
+      div.appendChild(sel);
+      quizBackBtn.style.display = "none";
+      quizNextBtn.textContent = "Weiter";
+    } else if (step === 1){
+      div.innerHTML = "<p>Wie viele Liter hast du getankt?</p>";
+      const inp = document.createElement("input");
+      inp.type = "number";
+      inp.className = "table-input number-input";
+      inp.id = "quizLiters";
+      inp.placeholder = "z.B. 120";
+      if (quizState.data.liters != null) inp.value = quizState.data.liters;
+      inp.style.width = "100%";
+      div.appendChild(inp);
+      quizBackBtn.style.display = "inline-block";
+      quizNextBtn.textContent = "Weiter";
+    } else if (step === 2){
+      div.innerHTML = "<p>Betriebsstunden / km</p>";
+      const inp = document.createElement("input");
+      inp.type = "number";
+      inp.className = "table-input number-input";
+      inp.id = "quizBetr";
+      inp.placeholder = "z.B. 1234";
+      if (quizState.data.betr != null) inp.value = quizState.data.betr;
+      inp.style.width = "100%";
+      div.appendChild(inp);
+      quizBackBtn.style.display = "inline-block";
+      quizNextBtn.textContent = "Weiter";
+    } else if (step === 3){
+      div.innerHTML = "<p>Bemerkung (optional)</p>";
+      const ta = document.createElement("textarea");
+      ta.id = "quizComment";
+      ta.rows = 3;
+      ta.style.width = "100%";
+      ta.value = quizState.data.comment || "";
+      div.appendChild(ta);
+      quizBackBtn.style.display = "inline-block";
+      quizNextBtn.textContent = "Zusammenfassung";
+    } else {
+      if (!quizState.data.date) quizState.data.date = getCurrentDateString();
+      if (!quizState.data.time) quizState.data.time = getCurrentTimeString();
+
+      const summary = document.createElement("div");
+      summary.className = "quiz-summary";
+
+      // Vorschau Zählerstand Anfang/Ende basierend auf letzter Zeile
+      let anfangPreview = "–";
+      let endePreview = "–";
+      const litersVal = parseNum(quizState.data.liters);
+      if (tableBody && tableBody.rows.length > 0) {
+        const lastRow = tableBody.rows[tableBody.rows.length - 1];
+        const prevEndInput = lastRow.querySelector(".ende");
+        const prevEndVal = prevEndInput ? parseNum(prevEndInput.value) : null;
+        if (prevEndVal != null) {
+          anfangPreview = String(Math.round(prevEndVal));
+          if (litersVal != null) {
+            endePreview = String(Math.round(prevEndVal + litersVal));
+          }
+        } else if (litersVal != null) {
+          endePreview = String(Math.round(litersVal));
+        }
+      } else if (litersVal != null) {
+        endePreview = String(Math.round(litersVal));
+      }
+
+      if (quizState.data.editDateTime) {
+        summary.innerHTML =
+          "<div><strong>Datum:</strong> " +
+          "<input type='date' id='quizDateInput' value='" + quizState.data.date + "'></div>" +
+          "<div><strong>Uhrzeit:</strong> " +
+          "<input type='time' id='quizTimeInput' value='" + quizState.data.time + "'></div>" +
+          "<div><strong>Gerät:</strong> " + (quizState.data.device || "–") + "</div>" +
+          "<div><strong>Zählerstand Anfang:</strong> " + anfangPreview + "</div>" +
+          "<div><strong>Getankt (L):</strong> " + (quizState.data.liters || "0") + "</div>" +
+          "<div><strong>Zählerstand Ende:</strong> " + endePreview + "</div>" +
+          "<div><strong>Betriebsstunden/km:</strong> " + (quizState.data.betr || "–") + "</div>" +
+          "<div><strong>Bemerkung:</strong> " + (quizState.data.comment || "–") + "</div>";
+      } else {
+        summary.innerHTML =
+          "<div><strong>Datum:</strong> " + quizState.data.date + "</div>" +
+          "<div><strong>Uhrzeit:</strong> " + quizState.data.time + "</div>" +
+          "<div><strong>Gerät:</strong> " + (quizState.data.device || "–") + "</div>" +
+          "<div><strong>Zählerstand Anfang:</strong> " + anfangPreview + "</div>" +
+          "<div><strong>Getankt (L):</strong> " + (quizState.data.liters || "0") + "</div>" +
+          "<div><strong>Zählerstand Ende:</strong> " + endePreview + "</div>" +
+          "<div><strong>Betriebsstunden/km:</strong> " + (quizState.data.betr || "–") + "</div>" +
+          "<div><strong>Bemerkung:</strong> " + (quizState.data.comment || "–") + "</div>";
+      }
+
+      div.innerHTML = "<p>Bitte prüfen und bestätigen:</p>";
+      div.appendChild(summary);
+
+      const editBtn = document.createElement("button");
+      editBtn.type = "button";
+      editBtn.className = "quiz-edit-datetime";
+      editBtn.textContent = quizState.data.editDateTime ? "Übernehmen" : "Datum & Uhrzeit ändern";
+      editBtn.addEventListener("click", () => {
+        if (!quizState.data.editDateTime) {
+          quizState.data.editDateTime = true;
+        } else {
+          const dateInput = document.getElementById("quizDateInput");
+          const timeInput = document.getElementById("quizTimeInput");
+          if (dateInput && dateInput.value) quizState.data.date = dateInput.value;
+          if (timeInput && timeInput.value) quizState.data.time = timeInput.value;
+          quizState.data.editDateTime = false;
+        }
+        updateQuizStep();
+      });
+      div.appendChild(editBtn);
+
+      quizBackBtn.style.display = "inline-block";
+      quizNextBtn.textContent = "Speichern";
+    }
+
+    quizContent.innerHTML = "";
+    quizContent.appendChild(div);
+  }
+
+
+  function renderDeliveryQuizStep(){
+    const step = quizState.step;
+    const div = document.createElement("div");
+    div.className = "quiz-question";
+
+    if (step === 0){
+      div.innerHTML = "<p>Lieferant auswählen</p>";
+      const sel = createSupplierSelect();
+      sel.id = "quizSupplier";
+      sel.style.marginTop = "4px";
+      if (quizState.data.supplier) sel.value = quizState.data.supplier;
+      div.appendChild(sel);
+      quizBackBtn.style.display = "none";
+      quizNextBtn.textContent = "Weiter";
+    } else if (step === 1){
+      div.innerHTML = "<p>Gelieferte Menge (L)</p>";
+      const inp = document.createElement("input");
+      inp.type = "number";
+      inp.className = "table-input number-input";
+      inp.id = "quizDeliveryLiters";
+      inp.placeholder = "z.B. 4000";
+      if (quizState.data.deliveryLiters != null) inp.value = quizState.data.deliveryLiters;
+      inp.style.width = "100%";
+      div.appendChild(inp);
+      quizBackBtn.style.display = "inline-block";
+      quizNextBtn.textContent = "Weiter";
+    } else if (step === 2){
+      div.innerHTML = "<p>Bemerkung (optional)</p>";
+      const ta = document.createElement("textarea");
+      ta.id = "quizComment";
+      ta.rows = 3;
+      ta.style.width = "100%";
+      ta.value = quizState.data.comment || "";
+      div.appendChild(ta);
+      quizBackBtn.style.display = "inline-block";
+      quizNextBtn.textContent = "Zusammenfassung";
+    } else {
+      if (!quizState.data.date) quizState.data.date = getCurrentDateString();
+      if (!quizState.data.time) quizState.data.time = getCurrentTimeString();
+
+      const summary = document.createElement("div");
+      summary.className = "quiz-summary";
+
+      if (quizState.data.editDateTime) {
+        summary.innerHTML =
+          "<div><strong>Datum:</strong> " +
+          "<input type='date' id='quizDateInput' value='" + quizState.data.date + "'></div>" +
+          "<div><strong>Uhrzeit:</strong> " +
+          "<input type='time' id='quizTimeInput' value='" + quizState.data.time + "'></div>" +
+          "<div><strong>Lieferant:</strong> " + (quizState.data.supplier || "–") + "</div>" +
+          "<div><strong>Gelieferte Menge (L):</strong> " + (quizState.data.deliveryLiters || "0") + "</div>" +
+          "<div><strong>Bemerkung:</strong> " + (quizState.data.comment || "–") + "</div>" +
+          "<div style='margin-top:6px;'><em>Bestand im Tank wird auf 4700 L gesetzt.</em></div>";
+      } else {
+        summary.innerHTML =
+          "<div><strong>Datum:</strong> " + quizState.data.date + "</div>" +
+          "<div><strong>Uhrzeit:</strong> " + quizState.data.time + "</div>" +
+          "<div><strong>Lieferant:</strong> " + (quizState.data.supplier || "–") + "</div>" +
+          "<div><strong>Gelieferte Menge (L):</strong> " + (quizState.data.deliveryLiters || "0") + "</div>" +
+          "<div><strong>Bemerkung:</strong> " + (quizState.data.comment || "–") + "</div>" +
+          "<div style='margin-top:6px;'><em>Bestand im Tank wird auf 4700 L gesetzt.</em></div>";
+      }
+
+      div.innerHTML = "<p>Bitte prüfen und bestätigen:</p>";
+      div.appendChild(summary);
+
+      const editBtn = document.createElement("button");
+      editBtn.type = "button";
+      editBtn.className = "quiz-edit-datetime";
+      editBtn.textContent = quizState.data.editDateTime ? "Übernehmen" : "Datum & Uhrzeit ändern";
+      editBtn.addEventListener("click", () => {
+        if (!quizState.data.editDateTime) {
+          quizState.data.editDateTime = true;
+        } else {
+          const dateInput = document.getElementById("quizDateInput");
+          const timeInput = document.getElementById("quizTimeInput");
+          if (dateInput && dateInput.value) quizState.data.date = dateInput.value;
+          if (timeInput && timeInput.value) quizState.data.time = timeInput.value;
+          quizState.data.editDateTime = false;
+        }
+        updateQuizStep();
+      });
+      div.appendChild(editBtn);
+
+      quizBackBtn.style.display = "inline-block";
+      quizNextBtn.textContent = "Speichern";
+    }
+
+    quizContent.appendChild(div);
+  }
+
+function quizNext(){
+    if (quizState.type === "normal"){
+      if (quizState.step === 0){
+        const sel = document.getElementById("quizDevice");
+        const val = sel ? sel.value : "";
+        if (!val){
+          alert("Bitte Gerät auswählen.");
+          return;
+        }
+        quizState.data.device = val;
+      } else if (quizState.step === 1){
+        const inp = document.getElementById("quizLiters");
+        const val = inp ? parseNum(inp.value) : null;
+        if (val == null || val <= 0){
+          alert("Bitte Liter eingeben.");
+          return;
+        }
+        quizState.data.liters = val;
+      } else if (quizState.step === 2){
+        const inp = document.getElementById("quizBetr");
+        const val = inp ? parseNum(inp.value) : null;
+        if (val == null || val <= 0){
+          alert("Bitte Betriebsstunden/km eingeben.");
+          return;
+        }
+        quizState.data.betr = val;
+      } else if (quizState.step === 3){
+        const ta = document.getElementById("quizComment");
+        quizState.data.comment = ta ? ta.value.trim() : "";
+      } else {
+        saveNormalFromQuiz();
+        return;
+      }
+      quizState.step++;
+      updateQuizStep();
+    } else if (quizState.type === "delivery"){
+      if (quizState.step === 0){
+        const sel = document.getElementById("quizSupplier");
+        const val = sel ? sel.value : "";
+        if (!val){
+          alert("Bitte Lieferant auswählen.");
+          return;
+        }
+        quizState.data.supplier = val;
+      } else if (quizState.step === 1){
+        const inp = document.getElementById("quizDeliveryLiters");
+        const val = inp ? parseNum(inp.value) : null;
+        if (val == null || val <= 0){
+          alert("Bitte gelieferte Menge (L) eingeben.");
+          return;
+        }
+        quizState.data.deliveryLiters = val;
+      } else if (quizState.step === 2){
+        const ta = document.getElementById("quizComment");
+        quizState.data.comment = ta ? ta.value.trim() : "";
+      } else {
+        saveDeliveryFromQuiz();
+        return;
+      }
+      quizState.step++;
+      updateQuizStep();
+    }
+  }
+
+  function quizBack(){
+    if (quizState.step === 0){
+      closeQuiz();
+      return;
+    }
+    quizState.step--;
+    updateQuizStep();
+  }
+
+  function saveNormalFromQuiz(){
+    const tr = addRow(true, "normal");
+    if (!tr) { closeQuiz(); return; }
+
+    const dateInput = tr.querySelector(".date");
+    const timeInput = tr.querySelector(".time");
+    const dateVal = quizState.data.date || getCurrentDateString();
+    const timeVal = quizState.data.time || getCurrentTimeString();
+    if (dateInput) dateInput.value = dateVal;
+    if (timeInput) timeInput.value = timeVal;
+
+    const devSel = tr.querySelector(".device");
+    if (devSel && quizState.data.device) devSel.value = quizState.data.device;
+
+    const dieselInput = tr.querySelector(".diesel");
+    if (dieselInput && quizState.data.liters != null){
+      dieselInput.value = quizState.data.liters;
+    }
+
+    const betrInput = tr.querySelector(".betr-total");
+    if (betrInput){
+      if (quizState.data.betr != null) betrInput.value = quizState.data.betr;
+      else betrInput.value = "";
+    }
+
+    const commentInput = tr.querySelector(".comment");
+    if (commentInput) commentInput.value = quizState.data.comment || "";
+
+    recalcAllForCurrentMonth();
+    closeQuiz();
+    alert("Eintrag gespeichert.");
+  }
+
+  function saveDeliveryFromQuiz(){
+    const beforeRows = tableBody.rows.length;
+    tankDeliveryBtn.click();
+    const afterRows = tableBody.rows.length;
+    if (afterRows <= beforeRows){
+      closeQuiz();
+      return;
+    }
+    const tr = tableBody.rows[afterRows - 1];
+
+    const dateInput = tr.querySelector(".date");
+    const timeInput = tr.querySelector(".time");
+    const dateVal = quizState.data.date || getCurrentDateString();
+    const timeVal = quizState.data.time || getCurrentTimeString();
+    if (dateInput) dateInput.value = dateVal;
+    if (timeInput) timeInput.value = timeVal;
+
+    const supSel = tr.querySelector(".supplier-select");
+    if (supSel && quizState.data.supplier){
+      supSel.value = quizState.data.supplier;
+    }
+
+    const dieselInput = tr.querySelector(".diesel");
+    if (dieselInput && quizState.data.deliveryLiters != null){
+      dieselInput.value = quizState.data.deliveryLiters;
+    }
+
+    const commentInput = tr.querySelector(".comment");
+    if (commentInput) commentInput.value = quizState.data.comment || "";
+
+    recalcAllForCurrentMonth();
+    closeQuiz();
+    alert("Tank-Lieferung gespeichert.");
+  }
+
+
+  /******** EVENTS ********/
+  document.getElementById("loginBtn").addEventListener("click",()=>{
+    loadUsers();
+    const u=document.getElementById("loginUsername").value.trim();
+    const p=document.getElementById("loginPassword").value;
+    const user=findUser(u,p);
+    if (!user){ alert("Falscher Benutzername oder Passwort."); return; }
+    currentUser=user;
+    showApp();
+    updateRoleUI();
+  });
+  logoutBtn.addEventListener("click",showLogin);
+
+  addRowBtn.addEventListener("click",()=>addRow(true,"normal"));
+  if (fabAddRow){
+    fabAddRow.addEventListener("click",()=>addRow(true,"normal"));
+  }
+
+  if (quizNormalBtn){
+    quizNormalBtn.addEventListener("click", ()=> openQuiz("normal"));
+  }
+  if (quizDeliveryBtn){
+    quizDeliveryBtn.addEventListener("click", ()=> openQuiz("delivery"));
+  }
+  if (quizShowTableBtn){
+    quizShowTableBtn.addEventListener("click", ()=>{
+      const toolbar = document.querySelector(".toolbar");
+      const tableCard = document.querySelector(".table-card");
+      if (toolbar) toolbar.style.display = "flex";
+      if (tableCard) tableCard.style.display = "block";
+      if (toolbar) {
+        const rect = toolbar.getBoundingClientRect();
+        window.scrollTo({top: window.scrollY + rect.top - 8, behavior: "smooth"});
+      }
+    });
+  }
+  if (quizNextBtn){
+    quizNextBtn.addEventListener("click", quizNext);
+  }
+  if (quizBackBtn){
+    quizBackBtn.addEventListener("click", quizBack);
+  }
+  if (quizOverlay){
+    quizOverlay.addEventListener("click", (e)=>{
+      if (e.target === quizOverlay) closeQuiz();
+    });
+  }
+
+  if (fabAddRow){
+    fabAddRow.addEventListener("click",()=>addRow(true,"normal"));
+  }
+
+  tankDeliveryBtn.addEventListener("click",()=>{
+    if (!currentMonthKey) return;
+
+    let prevAnf = "";
+    let prevEnd = "";
+    if (tableBody.rows.length > 0) {
+      const prev = tableBody.rows[tableBody.rows.length-1];
+      const pAnfInput = prev.querySelector(".anfang");
+      const pEndInput = prev.querySelector(".ende");
+      prevAnf = pAnfInput ? (pAnfInput.value || "") : "";
+      prevEnd = pEndInput ? (pEndInput.value || "") : "";
+    }
+
+    addRow(false,"delivery");
+
+    const newRow = tableBody.rows[tableBody.rows.length-1];
+    const inAnf = newRow.querySelector(".anfang");
+    const inEnd = newRow.querySelector(".ende");
+    if (prevAnf && inAnf) inAnf.value = prevAnf;
+    if (prevEnd && inEnd) inEnd.value = prevEnd;
+
+    recalcAllForCurrentMonth();
+    scrollTableToBottom();
+  });
+
+  exportBtn.addEventListener("click",exportToCSV);
+
+  importBtn.addEventListener("click",()=>{
+    importFile.value="";
+    importFile.click();
+  });
+  importFile.addEventListener("change",()=>{
+    const f = importFile.files && importFile.files[0];
+    if (!f) return;
+    importFromCSV(f);
+  });
+
+  addDeviceBtn.addEventListener("click",addDevice);
+  deleteDeviceBtn.addEventListener("click",deleteDevice);
+  addSupplierBtn.addEventListener("click",addSupplier);
+  deleteSupplierBtn.addEventListener("click",deleteSupplier);
+
+  document.getElementById("addUserBtn").addEventListener("click",()=>{
+    if (!currentUser || currentUser.role!=="superuser"){
+      alert("Nur Superuser können Benutzer anlegen."); return;
+    }
+    const name=document.getElementById("newUserName").value.trim();
+    const pass=document.getElementById("newUserPassword").value;
+    const full=document.getElementById("newUserFullName").value.trim();
+    const role=document.getElementById("newUserRole").value;
+    if (!name || !pass){ alert("Benutzername und Passwort dürfen nicht leer sein."); return; }
+    if (users.some(u=>u.username===name)){ alert("Benutzername existiert bereits."); return; }
+    users.push({username:name,password:pass,role,fullName:full});
+    saveUsers();
+    renderUserList();
+    document.getElementById("newUserName").value="";
+    document.getElementById("newUserPassword").value="";
+    document.getElementById("newUserFullName").value="";
+  });
+
+  monthPicker.addEventListener("change",()=>{
+    if (!monthPicker.value) return;
+    loadMonthIntoTable(monthPicker.value);
+  });
+
+  if (statsBtn){
+    statsBtn.addEventListener("click", openStats);
+  }
+  if (statsCloseBtn){
+    statsCloseBtn.addEventListener("click", closeStats);
+  }
+  if (statsPanel){
+    statsPanel.addEventListener("click", (e)=>{
+      if (e.target === statsPanel) closeStats();
+    });
+  }
+
+  (function init(){
+    loadUsers();
+    loadDevices();
+    loadSuppliers();
+    renderDeviceAndSupplierLists();
+    showLogin();
+  })();
+</script>
+
+</body>
+</html>
